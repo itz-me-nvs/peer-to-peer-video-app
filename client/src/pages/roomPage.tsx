@@ -6,9 +6,6 @@ const configuration: RTCConfiguration = {
   iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
 };
 
-interface LocationState {
-  name: string;
-}
 
 interface UserJoinedPayload {
   socketID: string;
@@ -28,7 +25,7 @@ const RoomPage = () => {
   console.log('roomId', roomId)
 //   const { state } = useLocation();
 //   const { name } = state as LocationState;
-  const [remoteStream, setRemoteStream] = useState(null);
+  const [_, setRemoteStream] = useState(null);
 
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
