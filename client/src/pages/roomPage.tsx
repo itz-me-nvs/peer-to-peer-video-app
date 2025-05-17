@@ -92,19 +92,6 @@ const RoomPage = () => {
         otherUser = from;
 
         if (signal.offer) {
-
-          const localStream = await navigator.mediaDevices.getUserMedia({
-      audio: true,
-      video: true,
-    });
-
-    if (localVideoRef.current) localVideoRef.current.srcObject = localStream;
-
-    // Make sure to add local tracks again
-    localStream.getTracks().forEach((track) => {
-      pc.current.addTrack(track, localStream);
-    });
-
           await pc.current.setRemoteDescription(
             new RTCSessionDescription(signal.offer)
           );
