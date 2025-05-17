@@ -28,22 +28,24 @@ io.on('connection', (socket: Socket)=> {
     let numClients = clientsInRoom ? clientsInRoom.size : 0;
     console.log('numClients', numClients);
 
-    if(numClients == 0){
-        socket.join(roomID);
-    }
-    else if(numClients == 1){
-       //this message ("join") will be received only by the first client since the client has not joined the room yet
-       socket.in(roomID).emit('user-joined', {
-      socketId: socket.id,
-      userName
-    })
-
-      socket.join(roomID);
-    }
-    
-    if(numClients >= 2) {
-      socket.emit('room-full', {isRoomFull: true});
+     if (numClients >= 2) {
+      socket.emit('room-full', { isRoomFull: true });
+      console.log('❌ Room is full');
       return;
+    }
+
+
+    socket.join(roomID);
+
+   if (numClients === 1) {
+      // Notify the first client that a second user has joined
+      socket.to(roomID).emit('user-joined', {
+        socketId: socket.id,
+        userName,
+      });
+      console.log(`✅ ${userName} joined room ${roomID} and notified existing peer`);
+    } else {
+      console.log(`✅ ${userName} joined room ${roomID}`);
     }
 
      socket.on('signal', data => {
