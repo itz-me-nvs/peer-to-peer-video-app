@@ -8,7 +8,7 @@ const configuration: RTCConfiguration = {
 
 
 interface UserJoinedPayload {
-  socketID: string;
+  socketId: string;
 }
 
 interface SignalData {
@@ -69,13 +69,13 @@ const RoomPage = () => {
         console.log("message", message)
       })
 
-      socket.on("user-joined", async ({ socketID }: UserJoinedPayload) => {
-        console.log("socketID", socketID)
-        otherUser = socketID;
+      socket.on("user-joined", async ({ socketId }: UserJoinedPayload) => {
+        console.log("socketID", socketId)
+        otherUser = socketId;
         const offer = await pc.current.createOffer();
         await pc.current.setLocalDescription(offer);
         socket.emit("signal", {
-          to: socketID,
+          to: socketId,
           signal: { offer },
         });
       });
