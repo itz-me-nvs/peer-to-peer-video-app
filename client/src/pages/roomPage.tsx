@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useLocation, useParams } from "react-router-dom";
 import socket from "../lib/socket";
 
 // WebRTC configuration using a public STUN server
@@ -22,6 +22,8 @@ interface SignalData {
 
 const RoomPage = () => {
   const { roomId } = useParams();
+  const {state} = useLocation();
+  const userName = state?.name || '';
   const [isRoomFull, setIsRoomFull] = useState(false);
   const [isVideoEnabled, setIsVideoEnabled] = useState(true);
   const [isAudioEnabled, setIsAudioEnabled] = useState(true);
@@ -78,7 +80,7 @@ const RoomPage = () => {
         }
       };
 
-      socket.emit("join-room", { roomID: roomId, userName: "navasck" });
+      socket.emit("join-room", { roomID: roomId, userName: userName });
 
     
       // When another user joins, initiate offer
