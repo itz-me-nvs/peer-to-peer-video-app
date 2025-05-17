@@ -93,12 +93,12 @@ const RoomPage = () => {
 
         if (signal.offer) {
           // If offer received, get local media again and respond with an answer
-          const localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
-          localStreamRef.current = localStream;
+          // const localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+          // localStreamRef.current = localStream;
 
-          if (localVideoRef.current) localVideoRef.current.srcObject = localStream;
+          // if (localVideoRef.current) localVideoRef.current.srcObject = localStream;
 
-          localStream.getTracks().forEach((track) => pc.current.addTrack(track, localStream));
+          // localStream.getTracks().forEach((track) => pc.current.addTrack(track, localStream));
 
           await pc.current.setRemoteDescription(new RTCSessionDescription(signal.offer));
           const answer = await pc.current.createAnswer();
