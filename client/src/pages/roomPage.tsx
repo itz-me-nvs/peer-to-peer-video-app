@@ -53,6 +53,7 @@ const RoomPage = () => {
 
       // When remote stream is received, attach it to the remote video element
       pc.current.ontrack = (e: any) => {
+        console.log('tracks', e.streams)
         if (remoteVideoRef.current) remoteVideoRef.current.srcObject = e.streams[0];
       };
 
