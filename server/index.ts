@@ -4,7 +4,7 @@ import { Server } from 'socket.io';
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, {cors: {origin: 'https://peer-to-peer-video-app-production.up.railway.app',  methods: ['GET', 'POST']}});
+const io = new Server(server, {cors: {origin: '*',  methods: ['GET', 'POST']}});
 
 const PORT = 5000;
 const HOST = process.env.HOST || '0.0.0.0'; // default to 0.0.0.0 for LAN access
@@ -22,13 +22,38 @@ io.on('connection', (socket)=> {
   socket.on('join-room', (roomID, userName)=> {
     console.log('roomID', roomID, userName);
 
-     socket.emit('test', {message: 'hello'})
+    let clientsInRoom = io.sockets.adapter.rooms.get(roomID);
+    console.log('clientsInRoom', clientsInRoom);
+    
+    let numClients = clientsInRoom ? clientsInRoom.size : 0;
+    console.log('numClients', numClients);
 
-    socket.join(roomID);
-    socket.to(roomID).emit('user-joined', {
+    if(numClients == 0){
+        socket.join(roomID);
+      socket.emit('user-joined', {
       socketId: socket.id,
       userName
     })
+    }
+    else if(numClients == 1){
+       //this message ("join") will be received only by the first client since the client has not joined the room yet
+       socket.in(roomID).emit('user-joined', {
+      socketId: socket.id,
+      userName
+    })
+
+      socket.join(roomID);
+    }
+    
+    if(numClients > 2) {
+      socket.emit('room-full', 'Room is full');
+      return;
+    }
+
+     socket.emit('test', {message: 'hello'})
+
+  
+   
 
      socket.on('signal', data => {
       console.log("signal", data);
