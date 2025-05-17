@@ -44,7 +44,7 @@ io.on('connection', (socket: Socket) => {
 
     if (numClients === 1) {
       // Notify the first client that a second user has joined
-      socket.to(roomID).emit('user-joined', {
+      socket.in(roomID).emit('user-joined', {
         socketId: socket.id,
         userName,
       });
