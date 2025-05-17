@@ -38,6 +38,13 @@ const RoomPage = () => {
     let otherUser: string | undefined;
 
     const init = async () => {
+
+        // Handle full room scenario
+      socket.on("room-full", (data) => {
+        setIsRoomFull(data.isRoomFull);
+      });
+
+
       // Request access to media devices
       const localStream = await navigator.mediaDevices.getUserMedia({
         audio: true,
@@ -49,12 +56,14 @@ const RoomPage = () => {
       if (localVideoRef.current) localVideoRef.current.srcObject = localStream;
 
       // Add local tracks to the peer connection
-      localStream.getTracks().forEach((track) => pc.current.addTrack(track, localStream));
+      localStream
+        .getTracks()
+        .forEach((track) => pc.current.addTrack(track, localStream));
 
       // When remote stream is received, attach it to the remote video element
       pc.current.ontrack = (e: any) => {
-        console.log('tracks', e.streams)
-        if (remoteVideoRef.current) remoteVideoRef.current.srcObject = e.streams[0];
+        if (remoteVideoRef.current)
+          remoteVideoRef.current.srcObject = e.streams[0];
       };
 
       // Send ICE candidates to remote peer
@@ -71,11 +80,7 @@ const RoomPage = () => {
 
       socket.emit("join-room", { roomID: roomId, userName: "navasck" });
 
-      // Handle full room scenario
-      socket.on("room-full", (data) => {
-        setIsRoomFull(data.isRoomFull);
-      });
-
+    
       // When another user joins, initiate offer
       socket.on("user-joined", async ({ socketId }: UserJoinedPayload) => {
         otherUser = socketId;
@@ -92,25 +97,23 @@ const RoomPage = () => {
         otherUser = from;
 
         if (signal.offer) {
-          // If offer received, get local media again and respond with an answer
-          // const localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
-          // localStreamRef.current = localStream;
-
-          // if (localVideoRef.current) localVideoRef.current.srcObject = localStream;
-
-          // localStream.getTracks().forEach((track) => pc.current.addTrack(track, localStream));
-
-          await pc.current.setRemoteDescription(new RTCSessionDescription(signal.offer));
+          await pc.current.setRemoteDescription(
+            new RTCSessionDescription(signal.offer)
+          );
           const answer = await pc.current.createAnswer();
           await pc.current.setLocalDescription(answer);
           socket.emit("signal", { to: from, signal: { answer } });
         }
 
         if (signal.answer) {
-          await pc.current.setRemoteDescription(new RTCSessionDescription(signal.answer));
+          await pc.current.setRemoteDescription(
+            new RTCSessionDescription(signal.answer)
+          );
         }
         if (signal.candidate) {
-          await pc.current.addIceCandidate(new RTCIceCandidate(signal.candidate));
+          await pc.current.addIceCandidate(
+            new RTCIceCandidate(signal.candidate)
+          );
         }
       });
 
@@ -134,9 +137,6 @@ const RoomPage = () => {
     if (localStreamRef.current) {
       localStreamRef.current.getVideoTracks().forEach((track) => {
         track.enabled = !track.enabled;
-        // track.enabled ? localVideoRef.current?.play() : localVideoRef.current?.pause();
-        // track.stop();
-        // pc.current.removeTrack(track);
         setIsVideoEnabled(track.enabled);
       });
     }
@@ -165,10 +165,23 @@ const RoomPage = () => {
         <p className="text-red-500 text-xl font-semibold">Room is full</p>
       ) : (
         <>
-          <h1 className="text-3xl font-bold mb-4 text-center">Live Video Call</h1>
+          <h1 className="text-3xl font-bold mb-4 text-center">
+            Live Video Call
+          </h1>
           <div className="flex flex-col md:flex-row gap-6 mb-8 items-center justify-center">
-            <video ref={localVideoRef} className="rounded-xl w-80 h-60 bg-black border-4 border-blue-500 shadow-lg" autoPlay playsInline muted />
-            <video ref={remoteVideoRef} className="rounded-xl w-80 h-60 bg-black border-4 border-green-500 shadow-lg" autoPlay playsInline />
+            <video
+              ref={localVideoRef}
+              className="rounded-xl w-80 h-60 bg-black border-4 border-blue-500 shadow-lg"
+              autoPlay
+              playsInline
+              muted
+            />
+            <video
+              ref={remoteVideoRef}
+              className="rounded-xl w-80 h-60 bg-black border-4 border-green-500 shadow-lg"
+              autoPlay
+              playsInline
+            />
           </div>
 
           <div className="flex flex-wrap justify-center gap-4 mt-4">
