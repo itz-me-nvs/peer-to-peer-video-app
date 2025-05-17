@@ -1,6 +1,6 @@
 import express, { Request, Response } from 'express';
 import http from 'http';
-import { Server } from 'socket.io';
+import { Server, Socket } from 'socket.io';
 
 const app = express();
 const server = http.createServer(app);
@@ -11,19 +11,16 @@ const HOST = process.env.HOST || '0.0.0.0'; // default to 0.0.0.0 for LAN access
 
 
 app.get('/', (req: Request, res: Response)=> {
-  res.send('Hello World')
+  res.send('WebRTC Signaling Server is running.')
 })
 
 
-io.on('connection', (socket)=> {
+io.on('connection', (socket: Socket)=> {
   console.log('socket', socket.id);
 
  
-  socket.on('join-room', (data)=> {
-    console.log('roomID', data);
-
-    const roomID = data.roomID;
-    const userName = data.userName;
+  socket.on('join-room', ({ roomID, userName }: { roomID: string; userName: string })=> {
+    console.log('roomID', roomID, 'userName', userName);
 
     let clientsInRoom = io.sockets.adapter.rooms.get(roomID);
     console.log('clientsInRoom', clientsInRoom);
