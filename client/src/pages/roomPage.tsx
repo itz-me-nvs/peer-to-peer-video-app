@@ -135,7 +135,7 @@ const RoomPage = () => {
       localStreamRef.current.getVideoTracks().forEach((track) => {
         track.enabled = !track.enabled;
         // track.enabled ? localVideoRef.current?.play() : localVideoRef.current?.pause();
-        track.stop();
+        // track.stop();
         // pc.current.removeTrack(track);
         setIsVideoEnabled(track.enabled);
       });
