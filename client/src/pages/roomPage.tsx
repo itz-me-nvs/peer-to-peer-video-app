@@ -25,7 +25,6 @@ const RoomPage = () => {
   console.log('roomId', roomId)
 //   const { state } = useLocation();
 //   const { name } = state as LocationState;
-  const [_, setRemoteStream] = useState(null);
   const [isRoomFull, setIsRoomFull] = useState(false);
 
   const localVideoRef = useRef<HTMLVideoElement>(null);
