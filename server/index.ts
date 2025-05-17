@@ -33,10 +33,6 @@ io.on('connection', (socket)=> {
 
     if(numClients == 0){
         socket.join(roomID);
-    //   socket.emit('user-joined', {
-    //   socketId: socket.id,
-    //   userName
-    // })
     }
     else if(numClients == 1){
        //this message ("join") will be received only by the first client since the client has not joined the room yet
@@ -49,14 +45,9 @@ io.on('connection', (socket)=> {
     }
     
     if(numClients > 2) {
-      socket.emit('room-full', 'Room is full');
+      socket.emit('room-full', {isRoomFull: true});
       return;
     }
-
-     socket.emit('test', {message: 'hello'})
-
-  
-   
 
      socket.on('signal', data => {
       console.log("signal", data);

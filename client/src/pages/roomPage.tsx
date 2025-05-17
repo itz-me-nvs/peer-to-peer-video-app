@@ -26,6 +26,7 @@ const RoomPage = () => {
 //   const { state } = useLocation();
 //   const { name } = state as LocationState;
   const [_, setRemoteStream] = useState(null);
+  const [isRoomFull, setIsRoomFull] = useState(false);
 
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
@@ -65,8 +66,9 @@ const RoomPage = () => {
 
       socket.emit("join-room", { roomID: roomId, userName: 'navasck' });
 
-      socket.on('test', (message) => {
-        console.log("message", message)
+
+      socket.on('room-full', (data) => {
+        setIsRoomFull(data.isRoomFull);
       })
 
       socket.on("user-joined", async ({ socketId }: UserJoinedPayload) => {
@@ -84,6 +86,19 @@ const RoomPage = () => {
         otherUser = from;
 
         if (signal.offer) {
+
+          const localStream = await navigator.mediaDevices.getUserMedia({
+      audio: true,
+      video: true,
+    });
+
+    if (localVideoRef.current) localVideoRef.current.srcObject = localStream;
+
+    // Make sure to add local tracks again
+    localStream.getTracks().forEach((track) => {
+      pc.current.addTrack(track, localStream);
+    });
+    
           await pc.current.setRemoteDescription(
             new RTCSessionDescription(signal.offer)
           );
@@ -117,8 +132,14 @@ const RoomPage = () => {
   }, [roomId]);
 
   return <div>
-     <video ref={localVideoRef} autoPlay playsInline muted  />
+     {
+        isRoomFull == true ? <p>Room is full</p> : (
+          <>
+          <video ref={localVideoRef} autoPlay playsInline muted  />
       <video ref={remoteVideoRef} autoPlay playsInline />
+          </>
+        )
+     }
   </div>;
 };
 
