@@ -30,10 +30,10 @@ io.on('connection', (socket)=> {
 
     if(numClients == 0){
         socket.join(roomID);
-      socket.emit('user-joined', {
-      socketId: socket.id,
-      userName
-    })
+    //   socket.emit('user-joined', {
+    //   socketId: socket.id,
+    //   userName
+    // })
     }
     else if(numClients == 1){
        //this message ("join") will be received only by the first client since the client has not joined the room yet
