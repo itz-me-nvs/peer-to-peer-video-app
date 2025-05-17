@@ -19,8 +19,11 @@ io.on('connection', (socket)=> {
   console.log('socket', socket.id);
 
  
-  socket.on('join-room', (roomID, userName)=> {
-    console.log('roomID', roomID, userName);
+  socket.on('join-room', (data)=> {
+    console.log('roomID', data);
+
+    const roomID = data.roomID;
+    const userName = data.userName;
 
     let clientsInRoom = io.sockets.adapter.rooms.get(roomID);
     console.log('clientsInRoom', clientsInRoom);
