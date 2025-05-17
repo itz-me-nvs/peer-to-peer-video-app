@@ -47,17 +47,16 @@ const RoomPage = () => {
         .getTracks()
         .forEach((track) => pc.current.addTrack(track, localStream));
 
-      // pc.current.ontrack = (e: any) => {
-      //   setRemoteStream(e.streams[0]);
-      //   if(remoteVideoRef.current) remoteVideoRef.current.srcObject = e.streams[0];
-      // };
+      pc.current.ontrack = (e: any) => {
+        if(remoteVideoRef.current) remoteVideoRef.current.srcObject = e.streams[0];
+      };
 
-      pc.current.addEventListener('track', (e)=> {
-        console.log('getting track', e);
+      // pc.current.addEventListener('track', (e)=> {
+      //   console.log('getting track', e);
         
-        const [remoteStream] = e.streams;
-        if(remoteVideoRef.current) remoteVideoRef.current.srcObject = remoteStream;
-      })
+      //   const [remoteStream] = e.streams;
+      //   if(remoteVideoRef.current) remoteVideoRef.current.srcObject = remoteStream;
+      // })
 
       pc.current.onicecandidate = (event) => {
         if (event.candidate && otherUser) {
@@ -92,6 +91,19 @@ const RoomPage = () => {
         otherUser = from;
 
         if (signal.offer) {
+
+          const localStream = await navigator.mediaDevices.getUserMedia({
+      audio: true,
+      video: true,
+    });
+
+    if (localVideoRef.current) localVideoRef.current.srcObject = localStream;
+
+    // Make sure to add local tracks again
+    localStream.getTracks().forEach((track) => {
+      pc.current.addTrack(track, localStream);
+    });
+
           await pc.current.setRemoteDescription(
             new RTCSessionDescription(signal.offer)
           );
