@@ -44,7 +44,7 @@ io.on('connection', (socket)=> {
       socket.join(roomID);
     }
     
-    if(numClients > 2) {
+    if(numClients >= 2) {
       socket.emit('room-full', {isRoomFull: true});
       return;
     }
