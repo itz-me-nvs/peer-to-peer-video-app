@@ -46,6 +46,10 @@ npm install
 npm run dev
 ```
 
+
+### Deployment
+
+deployed both frontend and backend on Railway ```https://railway.com/```
 ---
 
 
