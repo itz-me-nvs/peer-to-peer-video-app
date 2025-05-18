@@ -9,7 +9,7 @@ const configuration: RTCConfiguration = {
 
 interface UserJoinedPayload {
   socketId: string;
-  existingUsers: string[]
+  existingUsers: string[];
 }
 
 interface SignalData {
@@ -23,34 +23,31 @@ interface SignalData {
 
 const RoomPage = () => {
   const { roomId } = useParams();
-  const {state} = useLocation();
-  const userName = state?.name || '';
+  const { state } = useLocation();
+  const userName = state?.name || "";
   const [isRoomFull, setIsRoomFull] = useState(false);
   const [isVideoEnabled, setIsVideoEnabled] = useState(true);
   const [isAudioEnabled, setIsAudioEnabled] = useState(true);
 
-  const [remoteStreams, setRemoteStreams] = useState<{[id: string]: MediaStream}>({})
+  const [remoteStreams, setRemoteStreams] = useState<{
+    [id: string]: MediaStream;
+  }>({});
 
-  const peerConnections = useRef<{[id: string]: RTCPeerConnection}>({});
+  const peerConnections = useRef<{ [id: string]: RTCPeerConnection }>({});
 
   // References to video elements and media stream
   const localVideoRef = useRef<HTMLVideoElement>(null);
   // const remoteVideoRef = useRef<HTMLVideoElement>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
 
-  // Peer connection instance
-  // const pc = useRef(new RTCPeerConnection(configuration));
-
   useEffect(() => {
     // let otherUser: string | undefined;
 
     const init = async () => {
-
-        // Handle full room scenario
+      // Handle full room scenario
       socket.on("room-full", (data) => {
         setIsRoomFull(data.isRoomFull);
       });
-
 
       // Request access to media devices
       const localStream = await navigator.mediaDevices.getUserMedia({
@@ -61,51 +58,16 @@ const RoomPage = () => {
 
       // Display local stream in local video element
       if (localVideoRef.current) localVideoRef.current.srcObject = localStream;
-
-      // Add local tracks to the peer connection
-      // localStream
-      //   .getTracks()
-      //   .forEach((track) => pc.current.addTrack(track, localStream));
-
-      // When remote stream is received, attach it to the remote video element
-      // pc.current.ontrack = (e: RTCTrackEvent) => {
-      //   if (remoteVideoRef.current)
-      //     remoteVideoRef.current.srcObject = e.streams[0];
-      // };
-
-      // // Send ICE candidates to remote peer
-      // pc.current.onicecandidate = (event) => {
-      //   if (event.candidate && otherUser) {
-      //     socket.emit("signal", {
-      //       to: otherUser,
-      //       signal: {
-      //         candidate: event.candidate,
-      //       },
-      //     });
-      //   }
-      // };
-
       socket.emit("join-room", { roomID: roomId, userName: userName });
 
-    
       // When another user joins, initiate offer
       socket.on("user-joined", async ({ existingUsers }: UserJoinedPayload) => {
-        // otherUser = socketId;
-        // const offer = await pc.current.createOffer();
-        // await pc.current.setLocalDescription(offer);
-        // socket.emit("signal", {
-        //   to: socketId,
-        //   signal: { offer },
-        // });
-
-
         for (const id of existingUsers) {
           createPeerConnection(id, true);
         }
-
       });
 
-       socket.on("new-user", (socketId: string) => {
+      socket.on("new-user", (socketId: string) => {
         createPeerConnection(socketId, false);
       });
 
@@ -114,7 +76,7 @@ const RoomPage = () => {
         // otherUser = from;
         const pc = peerConnections.current[from];
 
-        if(!pc) return;
+        if (!pc) return;
 
         if (signal.offer) {
           await pc.setRemoteDescription(
@@ -131,15 +93,13 @@ const RoomPage = () => {
           );
         }
         if (signal.candidate) {
-          await pc.addIceCandidate(
-            new RTCIceCandidate(signal.candidate)
-          );
+          await pc.addIceCandidate(new RTCIceCandidate(signal.candidate));
         }
       });
 
       // When the other user leaves
       socket.on("user-left", (socketId: string) => {
-        if(peerConnections.current[socketId]){
+        if (peerConnections.current[socketId]) {
           peerConnections.current[socketId].close();
           delete peerConnections.current[socketId];
           setRemoteStreams((prev) => {
@@ -154,30 +114,32 @@ const RoomPage = () => {
     init();
 
     return () => {
-      Object.values(peerConnections.current).forEach(pc => pc.close());
+      Object.values(peerConnections.current).forEach((pc) => pc.close());
       socket.disconnect();
     };
   }, [roomId]);
 
-
-  const createPeerConnection = async(socketId: string, isInitiator: boolean)=> {
+  const createPeerConnection = async (
+    socketId: string,
+    isInitiator: boolean
+  ) => {
     const pc = new RTCPeerConnection(configuration);
     peerConnections.current[socketId] = pc;
 
     localStreamRef.current?.getTracks().forEach((track) => {
-      if(localStreamRef.current) pc.addTrack(track, localStreamRef.current);
+      if (localStreamRef.current) pc.addTrack(track, localStreamRef.current);
     });
 
-        const remoteStream = new MediaStream();
+    const remoteStream = new MediaStream();
     pc.ontrack = (e: RTCTrackEvent) => {
       e.streams[0].getTracks().forEach((track) => {
         remoteStream.addTrack(track);
-        setRemoteStreams((prev)=> ({
+        setRemoteStreams((prev) => ({
           ...prev,
-          [socketId]: remoteStream
-        }))
-      })
-    }
+          [socketId]: remoteStream,
+        }));
+      });
+    };
 
     pc.onicecandidate = (event) => {
       if (event.candidate) {
@@ -188,16 +150,15 @@ const RoomPage = () => {
       }
     };
 
-
-    if(isInitiator){
+    if (isInitiator) {
       const offer = await pc.createOffer();
-        await pc.setLocalDescription(offer);
-        socket.emit("signal", {
-          to: socketId,
-          signal: { offer },
-        });
+      await pc.setLocalDescription(offer);
+      socket.emit("signal", {
+        to: socketId,
+        signal: { offer },
+      });
     }
-  }
+  };
 
   // Toggle video stream
   const toggleVideo = () => {
@@ -235,26 +196,26 @@ const RoomPage = () => {
           <h1 className="text-3xl font-bold mb-4 text-center">
             Live Video Call
           </h1>
-       <div className="flex flex-wrap gap-6 justify-center">
-        <video
-          ref={localVideoRef}
-          className="rounded-xl w-64 h-48 border-4 border-blue-500 bg-black"
-          autoPlay
-          muted
-          playsInline
-        />
-        {Object.entries(remoteStreams).map(([id, stream]) => (
-          <video
-            key={id}
-            className="rounded-xl w-64 h-48 border-4 border-green-500 bg-black"
-            autoPlay
-            playsInline
-            ref={(video) => {
-              if (video && stream) video.srcObject = stream;
-            }}
-          />
-        ))}
-      </div>
+          <div className="flex flex-wrap gap-6 justify-center">
+            <video
+              ref={localVideoRef}
+              className="rounded-xl w-64 h-48 border-4 border-blue-500 bg-black"
+              autoPlay
+              muted
+              playsInline
+            />
+            {Object.entries(remoteStreams).map(([id, stream]) => (
+              <video
+                key={id}
+                className="rounded-xl w-64 h-48 border-4 border-green-500 bg-black"
+                autoPlay
+                playsInline
+                ref={(video) => {
+                  if (video && stream) video.srcObject = stream;
+                }}
+              />
+            ))}
+          </div>
 
           <div className="flex flex-wrap justify-center gap-4 mt-4">
             <button

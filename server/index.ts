@@ -52,19 +52,6 @@ io.on("connection", (socket: Socket) => {
       // Notify other users about the new user
       socket.to(roomID).emit("new-user", socket.id);
 
-      // Join the room
-      // socket.join(roomID);
-
-      // if (numClients > 0) {
-      //   socket.to(roomID).emit("user-joined", {
-      //     socketId: socket.id,
-      //     userName,
-      //   });
-      //   console.log(
-      //     `✅ ${userName} joined room ${roomID} and notified existing peer`
-      //   );
-      // }
-
       socket.on("signal", (data) => {
         console.log("signal", data);
 
