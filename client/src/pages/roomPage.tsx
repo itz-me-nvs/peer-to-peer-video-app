@@ -9,6 +9,7 @@ const configuration: RTCConfiguration = {
 
 interface UserJoinedPayload {
   socketId: string;
+  existingUsers: string[]
 }
 
 interface SignalData {
@@ -28,16 +29,20 @@ const RoomPage = () => {
   const [isVideoEnabled, setIsVideoEnabled] = useState(true);
   const [isAudioEnabled, setIsAudioEnabled] = useState(true);
 
+  const [remoteStreams, setRemoteStreams] = useState<{[id: string]: MediaStream}>({})
+
+  const peerConnections = useRef<{[id: string]: RTCPeerConnection}>({});
+
   // References to video elements and media stream
   const localVideoRef = useRef<HTMLVideoElement>(null);
-  const remoteVideoRef = useRef<HTMLVideoElement>(null);
+  // const remoteVideoRef = useRef<HTMLVideoElement>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
 
   // Peer connection instance
-  const pc = useRef(new RTCPeerConnection(configuration));
+  // const pc = useRef(new RTCPeerConnection(configuration));
 
   useEffect(() => {
-    let otherUser: string | undefined;
+    // let otherUser: string | undefined;
 
     const init = async () => {
 
@@ -58,81 +63,141 @@ const RoomPage = () => {
       if (localVideoRef.current) localVideoRef.current.srcObject = localStream;
 
       // Add local tracks to the peer connection
-      localStream
-        .getTracks()
-        .forEach((track) => pc.current.addTrack(track, localStream));
+      // localStream
+      //   .getTracks()
+      //   .forEach((track) => pc.current.addTrack(track, localStream));
 
       // When remote stream is received, attach it to the remote video element
-      pc.current.ontrack = (e: any) => {
-        if (remoteVideoRef.current)
-          remoteVideoRef.current.srcObject = e.streams[0];
-      };
+      // pc.current.ontrack = (e: RTCTrackEvent) => {
+      //   if (remoteVideoRef.current)
+      //     remoteVideoRef.current.srcObject = e.streams[0];
+      // };
 
-      // Send ICE candidates to remote peer
-      pc.current.onicecandidate = (event) => {
-        if (event.candidate && otherUser) {
-          socket.emit("signal", {
-            to: otherUser,
-            signal: {
-              candidate: event.candidate,
-            },
-          });
-        }
-      };
+      // // Send ICE candidates to remote peer
+      // pc.current.onicecandidate = (event) => {
+      //   if (event.candidate && otherUser) {
+      //     socket.emit("signal", {
+      //       to: otherUser,
+      //       signal: {
+      //         candidate: event.candidate,
+      //       },
+      //     });
+      //   }
+      // };
 
       socket.emit("join-room", { roomID: roomId, userName: userName });
 
     
       // When another user joins, initiate offer
-      socket.on("user-joined", async ({ socketId }: UserJoinedPayload) => {
-        otherUser = socketId;
-        const offer = await pc.current.createOffer();
-        await pc.current.setLocalDescription(offer);
-        socket.emit("signal", {
-          to: socketId,
-          signal: { offer },
-        });
+      socket.on("user-joined", async ({ existingUsers }: UserJoinedPayload) => {
+        // otherUser = socketId;
+        // const offer = await pc.current.createOffer();
+        // await pc.current.setLocalDescription(offer);
+        // socket.emit("signal", {
+        //   to: socketId,
+        //   signal: { offer },
+        // });
+
+
+        for (const id of existingUsers) {
+          createPeerConnection(id, true);
+        }
+
+      });
+
+       socket.on("new-user", (socketId: string) => {
+        createPeerConnection(socketId, false);
       });
 
       // Handle incoming signaling messages
       socket.on("signal", async ({ from, signal }: SignalData) => {
-        otherUser = from;
+        // otherUser = from;
+        const pc = peerConnections.current[from];
+
+        if(!pc) return;
 
         if (signal.offer) {
-          await pc.current.setRemoteDescription(
+          await pc.setRemoteDescription(
             new RTCSessionDescription(signal.offer)
           );
-          const answer = await pc.current.createAnswer();
-          await pc.current.setLocalDescription(answer);
+          const answer = await pc.createAnswer();
+          await pc.setLocalDescription(answer);
           socket.emit("signal", { to: from, signal: { answer } });
         }
 
         if (signal.answer) {
-          await pc.current.setRemoteDescription(
+          await pc.setRemoteDescription(
             new RTCSessionDescription(signal.answer)
           );
         }
         if (signal.candidate) {
-          await pc.current.addIceCandidate(
+          await pc.addIceCandidate(
             new RTCIceCandidate(signal.candidate)
           );
         }
       });
 
       // When the other user leaves
-      socket.on("user-left", () => {
-        pc.current.close();
-        alert("User left the call");
+      socket.on("user-left", (socketId: string) => {
+        if(peerConnections.current[socketId]){
+          peerConnections.current[socketId].close();
+          delete peerConnections.current[socketId];
+          setRemoteStreams((prev) => {
+            const updated = { ...prev };
+            delete updated[socketId];
+            return updated;
+          });
+        }
       });
     };
 
     init();
 
     return () => {
-      pc.current.close();
+      Object.values(peerConnections).forEach(pc => pc.close());
       socket.disconnect();
     };
   }, [roomId]);
+
+
+  const createPeerConnection = async(socketId: string, isInitiator: boolean)=> {
+    const pc = new RTCPeerConnection(configuration);
+    peerConnections.current[socketId] = pc;
+
+    localStreamRef.current?.getTracks().forEach((track) => {
+      if(localStreamRef.current) pc.addTrack(track, localStreamRef.current);
+    });
+
+        const remoteStream = new MediaStream();
+    pc.ontrack = (e: RTCTrackEvent) => {
+      e.streams[0].getTracks().forEach((track) => {
+        remoteStream.addTrack(track);
+        setRemoteStreams((prev)=> ({
+          ...prev,
+          [socketId]: remoteStream
+        }))
+      })
+    }
+
+    pc.onicecandidate = (event) => {
+      if (event.candidate) {
+        socket.emit("signal", {
+          to: socketId,
+          signal: { candidate: event.candidate },
+        });
+      }
+    };
+
+
+    if(isInitiator){
+      const offer = await pc.createOffer();
+        await pc.setLocalDescription(offer);
+        socket.emit("signal", {
+          to: socketId,
+          signal: { offer },
+        });
+    }
+  }
 
   // Toggle video stream
   const toggleVideo = () => {
@@ -156,7 +221,7 @@ const RoomPage = () => {
 
   // Leave the call and navigate back
   const leaveCall = () => {
-    pc.current.close();
+    Object.values(peerConnections).forEach((pc) => pc.close());
     socket.disconnect();
     window.location.href = "/";
   };
@@ -170,21 +235,26 @@ const RoomPage = () => {
           <h1 className="text-3xl font-bold mb-4 text-center">
             Live Video Call
           </h1>
-          <div className="flex flex-col md:flex-row gap-6 mb-8 items-center justify-center">
-            <video
-              ref={localVideoRef}
-              className="rounded-xl w-80 h-60 bg-black border-4 border-blue-500 shadow-lg"
-              autoPlay
-              playsInline
-              muted
-            />
-            <video
-              ref={remoteVideoRef}
-              className="rounded-xl w-80 h-60 bg-black border-4 border-green-500 shadow-lg"
-              autoPlay
-              playsInline
-            />
-          </div>
+       <div className="flex flex-wrap gap-6 justify-center">
+        <video
+          ref={localVideoRef}
+          className="rounded-xl w-64 h-48 border-4 border-blue-500 bg-black"
+          autoPlay
+          muted
+          playsInline
+        />
+        {Object.entries(remoteStreams).map(([id, stream]) => (
+          <video
+            key={id}
+            className="rounded-xl w-64 h-48 border-4 border-green-500 bg-black"
+            autoPlay
+            playsInline
+            ref={(video) => {
+              if (video && stream) video.srcObject = stream;
+            }}
+          />
+        ))}
+      </div>
 
           <div className="flex flex-wrap justify-center gap-4 mt-4">
             <button
