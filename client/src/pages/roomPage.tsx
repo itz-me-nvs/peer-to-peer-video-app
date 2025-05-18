@@ -154,7 +154,7 @@ const RoomPage = () => {
     init();
 
     return () => {
-      Object.values(peerConnections).forEach(pc => pc.close());
+      Object.values(peerConnections.current).forEach(pc => pc.close());
       socket.disconnect();
     };
   }, [roomId]);
@@ -221,7 +221,7 @@ const RoomPage = () => {
 
   // Leave the call and navigate back
   const leaveCall = () => {
-    Object.values(peerConnections).forEach((pc) => pc.close());
+    Object.values(peerConnections.current).forEach((pc) => pc.close());
     socket.disconnect();
     window.location.href = "/";
   };
